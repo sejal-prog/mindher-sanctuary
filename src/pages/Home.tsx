@@ -5,6 +5,9 @@ import { Menu, Settings, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
 import BottomNav from "@/components/BottomNav";
 import MoodSelector from "@/components/MoodSelector";
+import { getUser, saveMood, getWeekMoods, isOnboardingComplete } from "@/lib/storage";
+import BottomNav from "@/components/BottomNav";
+import MoodSelector from "@/components/MoodSelector";
 import { getUser, saveMood, getWeekMoods } from "@/lib/storage";
 
 const quotes = [
