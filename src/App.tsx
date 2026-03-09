@@ -12,6 +12,7 @@ import Chat from "./pages/Chat";
 import Insights from "./pages/Insights";
 import Crisis from "./pages/Crisis";
 import Breathing from "./pages/Breathing";
+import HealthcareDashboard from "./pages/HealthcareDashboard";
 import SettingsPage from "./pages/SettingsPage";
 import NotFound from "./pages/NotFound";
 
@@ -34,6 +35,7 @@ const App = () => (
           <Route path="/crisis" element={<Crisis />} />
           <Route path="/crisis/breathing" element={<Breathing />} />
           <Route path="/settings" element={<SettingsPage />} />
+          <Route path="/healthcare" element={<HealthcareDashboard />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
