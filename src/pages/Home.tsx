@@ -35,6 +35,12 @@ const Home = () => {
   const [selectedMood, setSelectedMood] = useState<number | null>(null);
   const user = getUser();
   const weekMoods = getWeekMoods();
+  useEffect(() => {
+    if (!isOnboardingComplete()) {
+      navigate("/splash", { replace: true });
+    }
+  }, [navigate]);
+
   const dailyQuote = quotes[new Date().getDate() % quotes.length];
 
   const handleMoodSelect = (mood: number) => {
