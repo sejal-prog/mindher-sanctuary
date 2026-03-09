@@ -22,7 +22,7 @@ Traditional mental health apps often operate in isolation, with no safety net if
 
 MindHer bridges this gap by combining AI-powered self-help tools with professional healthcare oversight:
 
-1. **Anonymous Safe Space**: Users can journal and express themselves without fear of judgment. All data shared with healthcare providers uses anonymous IDs only.
+1. **Anonymous Safe Space**: Users can journal and express themselves without fear of judgment. Any sensitive data shared with healthcare providers uses anonymous IDs only.
 
 2. **AI Companion (Mira)**: An empathetic AI chat companion powered by Llama 3.3 70B that provides supportive conversations, CBT-based techniques, and emotional validation.
 
@@ -61,6 +61,12 @@ MindHer bridges this gap by combining AI-powered self-help tools with profession
 
 ## Tech Stack
 
+### AI and ML
+- Groq API with Llama 3.3 70B for conversational AI
+- HuggingFace Inference API for sentiment analysis
+- distilbert-base-uncased-finetuned-sst-2-english (sentiment)
+- j-hartmann/emotion-english-distilroberta-base (emotion detection)
+
 ### Frontend
 - React 18 with TypeScript
 - Tailwind CSS for styling
@@ -71,17 +77,6 @@ MindHer bridges this gap by combining AI-powered self-help tools with profession
 ### Backend
 - Supabase Edge Functions (Deno runtime)
 - Supabase for backend infrastructure
-
-### AI and ML
-- Groq API with Llama 3.3 70B for conversational AI
-- HuggingFace Inference API for sentiment analysis
-  - distilbert-base-uncased-finetuned-sst-2-english (sentiment)
-  - j-hartmann/emotion-english-distilroberta-base (emotion detection)
-
-### Security
-- All API keys stored in Supabase Secrets
-- No sensitive credentials in client-side code
-- Password-protected healthcare dashboard
 
 ---
 
@@ -197,84 +192,6 @@ npm run dev
 
 ---
 
-## API Endpoints
-
-### Chat with Mira
-
-```
-POST /functions/v1/chat-with-mira
-```
-
-Request body:
-```json
-{
-  "message": "User message",
-  "conversationHistory": []
-}
-```
-
-### Analyze Journal
-
-```
-POST /functions/v1/analyze-journal
-```
-
-Request body:
-```json
-{
-  "journalText": "Journal entry content",
-  "journalId": "optional-id",
-  "userId": "optional-user-id"
-}
-```
-
-Response:
-```json
-{
-  "sentiment": "NEGATIVE",
-  "sentimentScore": 0.89,
-  "emotion": "sadness",
-  "riskLevel": "medium",
-  "riskScore": 0.5,
-  "shouldAlert": false,
-  "message": "Journal analyzed successfully."
-}
-```
-
----
-
-## Risk Level Classification
-
-| Level | Triggers | Action |
-|-------|----------|--------|
-| Low | Positive or neutral content | None |
-| Medium | Sad, stressed, anxious keywords | Track for patterns |
-| High | Hopelessness, isolation, prolonged distress | Alert healthcare provider |
-| Crisis | Suicide, self-harm, wanting to die | Immediate alert and show resources |
-
----
-
-## Security Considerations
-
-1. **API Keys**: All sensitive API keys are stored in Supabase Secrets, never in client code
-2. **User Privacy**: Healthcare providers only see anonymous IDs, not real names
-3. **Data Protection**: Journal content is only shared with healthcare if user consents
-4. **Password Protection**: Healthcare dashboard requires authentication
-5. **CORS**: Edge functions configured with appropriate CORS headers
-
----
-
-## Future Enhancements
-
-- User authentication with Supabase Auth
-- Real-time alerts using WebSockets
-- Community features for peer support
-- Integration with telehealth platforms
-- Multi-language support
-- Native mobile applications
-
----
-
 ## Contributing
 
 1. Fork the repository
@@ -294,6 +211,7 @@ This project is licensed under the MIT License. See the LICENSE file for details
 ## Acknowledgments
 
 - Groq for providing fast LLM inference
+- Lovable for rapid application development and deployment
 - HuggingFace for sentiment analysis models
 - Supabase for backend infrastructure
 - The mental health community for inspiration and guidance
