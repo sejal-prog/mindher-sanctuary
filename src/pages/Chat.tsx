@@ -1,75 +1,66 @@
-import { useState, useRef, useEffect } from "react";
+// src/pages/Chat.tsx
+// Chat page using secure Supabase AI backend
+
+import { useRef, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ChevronLeft, Send, Mic, MoreVertical } from "lucide-react";
-import { getChats, saveChat, getMoods, type ChatMessage } from "@/lib/storage";
-import { getAIResponse, getGreeting } from "@/lib/aiResponses";
-
-const quickReplies = ["I want to vent", "I'd like to do an exercise", "Just want to chat"];
+import { ChevronLeft, Send, Mic, MoreVertical, AlertCircle } from "lucide-react";
+import { useMiraChat } from "@/hooks/useMiraChat";
+import { getQuickReplies } from "@/services/miraAI";
 
 const Chat = () => {
   const navigate = useNavigate();
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
-  const [isTyping, setIsTyping] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
-  const initialized = useRef(false);
+  
+  // Use the secure Mira chat hook
+  const {
+    messages,
+    isLoading,
+    isCrisisDetected,
+    sendMessage,
+    initializeChat,
+  } = useMiraChat();
 
+  // Initialize chat with greeting on first load
   useEffect(() => {
-    if (initialized.current) return;
-    initialized.current = true;
-    const stored = getChats();
-    if (stored.length > 0) {
-      setMessages(stored);
-    } else {
-      const moods = getMoods();
-      const recentBad = moods.length > 0 && moods[moods.length - 1].mood <= 2;
-      const greeting: ChatMessage = {
-        role: "assistant",
-        content: getGreeting(stored.length === 0, recentBad),
-        timestamp: new Date().toISOString(),
-      };
-      setMessages([greeting]);
-      saveChat([greeting]);
+    if (messages.length === 0) {
+      initializeChat();
     }
-  }, []);
+  }, [messages.length, initializeChat]);
 
+  // Auto-scroll to bottom when messages change
   useEffect(() => {
-    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
-  }, [messages, isTyping]);
+    scrollRef.current?.scrollTo({
+      top: scrollRef.current.scrollHeight,
+      behavior: "smooth",
+    });
+  }, [messages, isLoading]);
 
-  const sendMessage = (text: string) => {
-    if (!text.trim()) return;
-    const userMsg: ChatMessage = { role: "user", content: text.trim(), timestamp: new Date().toISOString() };
-    const updated = [...messages, userMsg];
-    setMessages(updated);
-    saveChat(updated);
+  // Handle sending message
+  const handleSend = (text: string) => {
+    if (!text.trim() || isLoading) return;
+    sendMessage(text);
     setInput("");
-    setIsTyping(true);
-
-    setTimeout(() => {
-      const aiResponse: ChatMessage = {
-        role: "assistant",
-        content: getAIResponse(text),
-        timestamp: new Date().toISOString(),
-      };
-      const withAI = [...updated, aiResponse];
-      setMessages(withAI);
-      saveChat(withAI);
-      setIsTyping(false);
-    }, 1000 + Math.random() * 1500);
   };
 
+  // Format timestamp
   const formatTime = (ts: string) => {
     const d = new Date(ts);
     return d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
   };
 
+  // Get quick replies based on crisis state
+  const quickReplies = getQuickReplies(isCrisisDetected);
+
   return (
     <div className="mindher-container bg-background min-h-screen flex flex-col">
       {/* Header */}
       <header className="flex items-center gap-3 px-4 py-3 border-b border-border bg-card">
-        <button onClick={() => navigate("/")} className="p-1 rounded-full hover:bg-muted">
+        <button
+          onClick={() => navigate("/")}
+          className="p-1 rounded-full hover:bg-muted"
+        >
           <ChevronLeft size={22} className="text-foreground" />
         </button>
         <div className="flex-1">
@@ -84,17 +75,48 @@ const Chat = () => {
         </button>
       </header>
 
+      {/* Crisis Alert Banner */}
+      {isCrisisDetected && (
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-red-50 border-b border-red-200 px-4 py-3 flex items-center justify-between"
+        >
+          <div className="flex items-center gap-2">
+            <AlertCircle size={18} className="text-red-500" />
+            <span className="text-sm text-red-700">
+              If you're in crisis, help is available 24/7
+            </span>
+          </div>
+          <button
+            onClick={() => navigate("/crisis")}
+            className="px-3 py-1.5 bg-red-500 text-white rounded-full text-xs font-medium hover:bg-red-600 transition-colors"
+          >
+            Get Help
+          </button>
+        </motion.div>
+      )}
+
       {/* Messages */}
-      <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-4 space-y-3">
-        {messages.map((msg, i) => (
+      <div
+        ref={scrollRef}
+        className="flex-1 overflow-y-auto px-4 py-4 space-y-3"
+      >
+        {messages.map((msg) => (
           <motion.div
-            key={i}
+            key={msg.id}
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.2 }}
-            className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
+            className={`flex ${
+              msg.role === "user" ? "justify-end" : "justify-start"
+            }`}
           >
-            <div className={`max-w-[80%] ${msg.role === "user" ? "order-1" : ""}`}>
+            <div
+              className={`max-w-[80%] ${
+                msg.role === "user" ? "order-1" : ""
+              }`}
+            >
               {msg.role === "assistant" && (
                 <span className="text-xs mb-1 block">💜</span>
               )}
@@ -114,8 +136,13 @@ const Chat = () => {
           </motion.div>
         ))}
 
-        {isTyping && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex items-center gap-1 px-4 py-2">
+        {/* Typing indicator */}
+        {isLoading && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="flex items-center gap-1 px-4 py-2"
+          >
             <span className="text-xs">💜</span>
             <div className="bg-primary/15 rounded-2xl px-4 py-3 flex gap-1">
               {[0, 1, 2].map((i) => (
@@ -123,26 +150,35 @@ const Chat = () => {
                   key={i}
                   className="w-2 h-2 rounded-full bg-primary/50"
                   animate={{ y: [0, -4, 0] }}
-                  transition={{ duration: 0.6, repeat: Infinity, delay: i * 0.15 }}
+                  transition={{
+                    duration: 0.6,
+                    repeat: Infinity,
+                    delay: i * 0.15,
+                  }}
                 />
               ))}
             </div>
           </motion.div>
         )}
 
-        {/* Quick replies after first Mira message */}
-        {messages.length === 1 && messages[0].role === "assistant" && (
-          <div className="flex flex-wrap gap-2 mt-2">
+        {/* Quick replies after first message */}
+        {messages.length === 1 && messages[0].role === "assistant" && !isLoading && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
+            className="flex flex-wrap gap-2 mt-2"
+          >
             {quickReplies.map((qr) => (
               <button
                 key={qr}
-                onClick={() => sendMessage(qr)}
-                className="px-3 py-1.5 bg-primary/10 text-primary rounded-full text-xs font-medium"
+                onClick={() => handleSend(qr)}
+                className="px-3 py-1.5 bg-primary/10 text-primary rounded-full text-xs font-medium hover:bg-primary/20 transition-colors"
               >
                 {qr}
               </button>
             ))}
-          </div>
+          </motion.div>
         )}
       </div>
 
@@ -152,16 +188,18 @@ const Chat = () => {
           <input
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && sendMessage(input)}
+            onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && handleSend(input)}
             placeholder="Type a message..."
-            className="mindher-input flex-1 py-2.5"
+            disabled={isLoading}
+            className="mindher-input flex-1 py-2.5 disabled:opacity-50"
           />
           <button className="p-2.5 rounded-full hover:bg-muted">
             <Mic size={20} className="text-muted-foreground" />
           </button>
           <button
-            onClick={() => sendMessage(input)}
-            className="p-2.5 bg-primary rounded-full"
+            onClick={() => handleSend(input)}
+            disabled={isLoading || !input.trim()}
+            className="p-2.5 bg-primary rounded-full disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <Send size={18} className="text-primary-foreground" />
           </button>
